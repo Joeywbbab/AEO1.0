@@ -387,7 +387,7 @@ export default function PromptsPage() {
                         isSelectionMode ? "left-12" : "left-0"
                       }`}
                     >
-                      <span className="text-sm text-foreground leading-relaxed line-clamp-2">{prompt.prompt}</span>
+                      <span className="text-sm text-foreground leading-relaxed">{prompt.prompt}</span>
                     </td>
 
                     <td className="px-6 py-4">
@@ -456,10 +456,10 @@ export default function PromptsPage() {
                     </td>
 
                     <td className="px-6 py-4">
-                      <span className="text-sm text-muted-foreground">{prompt.country}</span>
+                      <span className="text-sm text-muted-foreground">US</span>
                     </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm text-muted-foreground">{prompt.created}</span>
                     </td>
 
