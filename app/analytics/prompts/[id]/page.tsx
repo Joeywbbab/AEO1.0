@@ -35,14 +35,14 @@ export default function PromptDetailPage() {
       <div className="border-b border-border bg-card px-6 py-4">
         <div className="flex items-center gap-4 mb-3">
           <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0">
-            <Link href="/situation/prompts">
+            <Link href="/analytics/prompts">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <BreadcrumbNav
             items={[
-              { label: "Situation", href: "/situation/prompts" },
-              { label: "Prompts", href: "/situation/prompts" },
+              { label: "Situation", href: "/analytics/prompts" },
+              { label: "Prompts", href: "/analytics/prompts" },
               { label: "Detail" },
             ]}
           />
