@@ -1,11 +1,12 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { RefreshCw, TrendingUp, Minus, Calendar, Filter, Tag, Info } from "lucide-react"
+import { RefreshCw, TrendingUp, Minus, Calendar, Filter, Tag, Info, BookOpen } from "lucide-react"
 import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts"
 import {
   mockDashboardVisibilityTrend,
@@ -15,9 +16,29 @@ import {
 } from "@/lib/mock-data"
 
 export default function DashboardPage() {
+  const router = useRouter()
   return (
     <TooltipProvider>
       <div className="flex h-full flex-col">
+        {/* Page Header */}
+        <div className="border-b border-border bg-card px-8 py-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Overview of your AEO performance and competitive insights
+              </p>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <a href="/guidelines" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Guidelines
+              </a>
+            </Button>
+          </div>
+        </div>
+
+        {/* Filters Bar */}
         <div className="border-b border-border bg-card">
           <div className="flex h-16 items-center gap-4 px-6">
             <div className="flex items-center gap-2">
@@ -97,7 +118,7 @@ export default function DashboardPage() {
                         <Info className="h-3.5 w-3.5 cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="max-w-xs">Percentage of chats mentioning each brand</p>
+                        <p className="max-w-xs">Percentage of chats mentioning your brand</p>
                       </TooltipContent>
                     </Tooltip>
                   </CardDescription>
@@ -240,14 +261,16 @@ export default function DashboardPage() {
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-muted/50">
+                          <TableHead className="font-medium text-xs w-16 text-center">Rank</TableHead>
                           <TableHead className="font-medium text-xs">Competitor</TableHead>
                           <TableHead className="font-medium text-xs text-center">Visibility</TableHead>
-                          <TableHead className="font-medium text-xs text-center">Avg. Rank</TableHead>
+                          <TableHead className="font-medium text-xs text-center">Position Score</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {mockDashboardCompetitiveRanking.map((row, index) => (
                           <TableRow key={index} className="hover:bg-muted/30 transition-colors">
+                            <TableCell className="text-sm py-4 text-center text-muted-foreground">{index + 1}</TableCell>
                             <TableCell className="text-sm py-4 font-medium">{row.brand}</TableCell>
                             <TableCell className="text-sm text-center">{row.visibilityScore}</TableCell>
                             <TableCell className="text-sm text-center font-semibold">{row.rank.toFixed(1)}</TableCell>
@@ -282,7 +305,11 @@ export default function DashboardPage() {
                       </TableHeader>
                       <TableBody>
                         {mockRecentChats.map((chat) => (
-                          <TableRow key={chat.id} className="hover:bg-muted/30 transition-colors">
+                          <TableRow
+                            key={chat.id}
+                            className="hover:bg-muted/30 transition-colors cursor-pointer"
+                            onClick={() => router.push(`/analytics/chats/${chat.id}`)}
+                          >
                             <TableCell className="text-center py-4">
                               <span className="text-xl">{chat.modelIcon}</span>
                             </TableCell>

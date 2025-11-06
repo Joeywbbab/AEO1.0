@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { MoreVertical, Plus, Filter } from "lucide-react"
+import { MoreVertical, Plus, Filter, BookOpen } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -187,9 +187,11 @@ export default function PromptsPage() {
               · {displayedPrompts} / {totalPrompts} Prompts
             </span>
           </div>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add a new prompt
+          <Button variant="outline" size="sm" asChild>
+            <a href="/guidelines" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Guidelines
+            </a>
           </Button>
         </div>
 
@@ -310,6 +312,10 @@ export default function PromptsPage() {
 
             <Button variant="outline" size="sm" className="h-10 bg-transparent" onClick={handleToggleSelectionMode}>
               Select
+            </Button>
+
+            <Button size="sm" className="h-10">
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
         </div>

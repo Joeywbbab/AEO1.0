@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ExternalLink, Filter } from "lucide-react"
+import { ExternalLink, Filter, BookOpen } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -51,8 +51,18 @@ export default function CitationsPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-border bg-card px-8 py-5">
-        <h1 className="text-2xl font-semibold text-foreground mb-1">Citations</h1>
-        <p className="text-sm text-muted-foreground">{mockCitations.length} citations · Central index of sources</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground mb-1">Citations</h1>
+            <p className="text-sm text-muted-foreground">{mockCitations.length} citations · Central index of sources</p>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <a href="/guidelines" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Guidelines
+            </a>
+          </Button>
+        </div>
       </div>
 
       <div className="border-b border-border bg-card px-8 py-4">
