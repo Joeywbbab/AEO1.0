@@ -311,6 +311,16 @@ export default function CompetitorsPage() {
   const [selectedCompetitor, setSelectedCompetitor] = React.useState<string>("all")
   const [selectedIntent, setSelectedIntent] = React.useState<string>("all")
   const [expandedCompetitors, setExpandedCompetitors] = React.useState<Set<string>>(new Set())
+  const [isAddingCompetitor, setIsAddingCompetitor] = React.useState(false)
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open)
+    if (!open) {
+      setIsAddingCompetitor(false)
+      setNewCompetitorName("")
+      setNewCompetitorDomain("")
+    }
+  }
 
   const handleAddCompetitor = () => {
     if (newCompetitorName.trim() && newCompetitorDomain.trim()) {
@@ -323,6 +333,7 @@ export default function CompetitorsPage() {
       setCompetitors([...competitors, newCompetitor])
       setNewCompetitorName("")
       setNewCompetitorDomain("")
+      setIsAddingCompetitor(false)
       setIsDialogOpen(false)
     }
   }
@@ -426,7 +437,7 @@ export default function CompetitorsPage() {
             </p>
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
                 <Settings className="h-4 w-4 mr-2" />
@@ -438,37 +449,7 @@ export default function CompetitorsPage() {
                 <DialogTitle>Manage Competitors</DialogTitle>
                 <DialogDescription>Add or remove competitors to track in your analysis.</DialogDescription>
               </DialogHeader>
-
               <div className="mt-6 space-y-6">
-                {/* Add New Competitor Form */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Add New Competitor</h3>
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="competitor-name">Competitor Name</Label>
-                      <Input
-                        id="competitor-name"
-                        placeholder="e.g., Jira"
-                        value={newCompetitorName}
-                        onChange={(e) => setNewCompetitorName(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="competitor-domain">Domain</Label>
-                      <Input
-                        id="competitor-domain"
-                        placeholder="e.g., atlassian.com/jira"
-                        value={newCompetitorDomain}
-                        onChange={(e) => setNewCompetitorDomain(e.target.value)}
-                      />
-                    </div>
-                    <Button onClick={handleAddCompetitor} className="w-full">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Competitor
-                    </Button>
-                  </div>
-                </div>
-
                 {/* Current Competitors List */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium">Current Competitors ({competitors.length})</h3>
@@ -493,6 +474,57 @@ export default function CompetitorsPage() {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                <div className="border-t border-border pt-4">
+                  {isAddingCompetitor ? (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-medium">Add New Competitor</h3>
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="competitor-name">Competitor Name</Label>
+                          <Input
+                            id="competitor-name"
+                            placeholder="e.g., Jira"
+                            value={newCompetitorName}
+                            onChange={(e) => setNewCompetitorName(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="competitor-domain">Domain</Label>
+                          <Input
+                            id="competitor-domain"
+                            placeholder="e.g., atlassian.com/jira"
+                            value={newCompetitorDomain}
+                            onChange={(e) => setNewCompetitorDomain(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button onClick={handleAddCompetitor} className="flex-1">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Save Competitor
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="flex-1"
+                            onClick={() => {
+                              setIsAddingCompetitor(false)
+                              setNewCompetitorName("")
+                              setNewCompetitorDomain("")
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button onClick={() => setIsAddingCompetitor(true)} className="w-full" variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Competitor
+                    </Button>
+                  )}
                 </div>
               </div>
             </DialogContent>

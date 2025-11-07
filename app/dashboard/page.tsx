@@ -262,7 +262,7 @@ export default function DashboardPage() {
                       <TableHeader>
                         <TableRow className="bg-muted/50">
                           <TableHead className="font-medium text-xs w-16 text-center">Rank</TableHead>
-                          <TableHead className="font-medium text-xs">Competitor</TableHead>
+                          <TableHead className="font-medium text-xs">Brand</TableHead>
                           <TableHead className="font-medium text-xs text-center">Visibility</TableHead>
                           <TableHead className="font-medium text-xs text-center">Position Score</TableHead>
                         </TableRow>
