@@ -155,6 +155,29 @@ export type RecentChat = {
   created: string
 }
 
+export type ChatDetail = {
+  id: string
+  query: string
+  response: string
+  model: "ChatGPT" | "Perplexity" | "Gemini" | "Claude"
+  modelIcon: string
+  lastRun: string
+  promptLength: number
+  responseLength: number
+  competitorMentions: {
+    name: string
+    domain: string
+    mentions: number
+    score: number
+  }[]
+  sources: {
+    id: string
+    title: string
+    url: string
+    favicon?: string
+  }[]
+}
+
 export type SourceRanking = {
   rank: number
   domain: string
@@ -1350,3 +1373,85 @@ export const mockAuditIssues: AuditIssue[] = [
     detected: "2024-01-09",
   },
 ]
+
+export const mockChatDetails: Record<string, ChatDetail> = {
+  "1": {
+    id: "1",
+    query: "What are the main differences between Manus and Genspark features?",
+    response:
+      "Manus AI and Genspark are both advanced AI agents designed to automate complex tasks, but they differ significantly in their features, performance, and ideal use cases.\n\n**Core Functionality:**\n\nManus AI: Operates as a fully autonomous agent capable of executing complex tasks such as content creation, analysis, and automation. It utilizes multiple AI models, including Claude 3.5 and Qwen, along with sub-agents to perform end-to-end tasks. (allaboutai.com)\n\nGenspark: Employs a mixture-of-agents system optimized for tasks like search, summaries, and decision support. It integrates multiple models and tools to provide fast responses, making it suitable for real-time summaries and tasks. (allaboutai.com)\n\n**Performance and Speed:**\n\nManus AI: Demonstrates high performance with a GAIA benchmark score of 86.5%. However, it may experience slower response times under heavy load due to its complex task execution capabilities. (allaboutai.com)\n\nGenspark: Optimized for speed, Genspark delivers quick, real-time summaries and tasks, making it more efficient under load compared to Manus AI.",
+    model: "ChatGPT",
+    modelIcon: "💬",
+    lastRun: "16 Nov 2025, 23:05",
+    promptLength: 66,
+    responseLength: 3731,
+    competitorMentions: [
+      {
+        name: "manus",
+        domain: "manus.im",
+        mentions: 16,
+        score: 50,
+      },
+      {
+        name: "Genspark",
+        domain: "genspark.com",
+        mentions: 16,
+        score: 50,
+      },
+    ],
+    sources: [
+      {
+        id: "1",
+        title: "Manus AI Review 2025: Only Bold Promises Or Actual Results?",
+        url: "https://www.allaboutai.com/ai-reviews/manus-ai/",
+      },
+      {
+        id: "2",
+        title: "Comparison Genspark Vs Manus AI",
+        url: "https://www.allaboutai.com/comparison/genspark-vs-manus-ai/",
+      },
+      {
+        id: "3",
+        title: "Comparaison Genspark Vs Manus AI",
+        url: "https://www.allaboutai.com/fr-fr/comparaison/genspark-vs-manus-ai/",
+      },
+    ],
+  },
+  "2": {
+    id: "2",
+    query: "Asana vs Monday.com: which is better for agile teams?",
+    response:
+      "For agile teams, both Asana and Monday.com offer robust project management features, but they excel in different areas.\n\n**Asana** is particularly strong in:\n- Sprint planning and backlog management with dedicated views\n- Advanced automation rules for agile workflows\n- Native integrations with development tools like GitHub and GitLab\n- Customizable dashboards for tracking sprint metrics\n\n**Monday.com** excels at:\n- Visual workflow customization with drag-and-drop interface\n- Team collaboration features and communication tools\n- Template library for various agile methodologies\n- Time tracking and resource management\n\nFor teams prioritizing sprint management and developer integrations, Asana is often the better choice. For teams wanting more visual customization and broader collaboration features, Monday.com may be preferable.",
+    model: "Perplexity",
+    modelIcon: "🔮",
+    lastRun: "16 Nov 2025, 20:30",
+    promptLength: 54,
+    responseLength: 1024,
+    competitorMentions: [
+      {
+        name: "Asana",
+        domain: "asana.com",
+        mentions: 12,
+        score: 55,
+      },
+      {
+        name: "Monday.com",
+        domain: "monday.com",
+        mentions: 10,
+        score: 45,
+      },
+    ],
+    sources: [
+      {
+        id: "1",
+        title: "Asana vs Monday: A Comprehensive Comparison",
+        url: "https://forbes.com/asana-vs-monday",
+      },
+      {
+        id: "2",
+        title: "Best Project Management Tools 2024",
+        url: "https://techcrunch.com/best-pm-software",
+      },
+    ],
+  },
+}
