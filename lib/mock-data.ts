@@ -178,6 +178,27 @@ export type ChatDetail = {
   }[]
 }
 
+export type TopicCluster = {
+  id: string
+  pillarTopic: string
+  description: string
+  promptCount: number
+  avgVisibility: number
+  contentContribution: number // Percentage contribution to overall content strategy
+  subtopics: {
+    id: string
+    name: string
+    promptCount: number
+    visibility: number
+    prompts: {
+      id: string
+      prompt: string
+      visibility: number
+      intent: string
+    }[]
+  }[]
+}
+
 export type SourceRanking = {
   rank: number
   domain: string
@@ -1455,3 +1476,140 @@ export const mockChatDetails: Record<string, ChatDetail> = {
     ],
   },
 }
+
+export const mockTopicClusters: TopicCluster[] = [
+  {
+    id: "1",
+    pillarTopic: "Project Management Tools",
+    description: "Comprehensive coverage of project management software comparisons and features",
+    promptCount: 4,
+    avgVisibility: 75,
+    contentContribution: 45,
+    subtopics: [
+      {
+        id: "1-1",
+        name: "Tool Comparisons",
+        promptCount: 2,
+        visibility: 77,
+        prompts: [
+          {
+            id: "2",
+            prompt: "Asana vs Monday.com: which is better for agile teams?",
+            visibility: 85,
+            intent: "Comparative",
+          },
+          {
+            id: "5",
+            prompt: "Best free project management tools for startups",
+            visibility: 68,
+            intent: "Comparative",
+          },
+        ],
+      },
+      {
+        id: "1-2",
+        name: "Remote Team Solutions",
+        promptCount: 1,
+        visibility: 72,
+        prompts: [
+          {
+            id: "1",
+            prompt: "What are the best project management tools for remote teams?",
+            visibility: 72,
+            intent: "Informational",
+          },
+        ],
+      },
+      {
+        id: "1-3",
+        name: "Feature Guides",
+        promptCount: 1,
+        visibility: 58,
+        prompts: [
+          {
+            id: "4",
+            prompt: "What features should I look for in task management software?",
+            visibility: 58,
+            intent: "Informational",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "2",
+    pillarTopic: "Workflow Automation",
+    description: "Topics related to automating workflows and integrations in project management",
+    promptCount: 1,
+    avgVisibility: 92,
+    contentContribution: 20,
+    subtopics: [
+      {
+        id: "2-1",
+        name: "Setup & Configuration",
+        promptCount: 1,
+        visibility: 92,
+        prompts: [
+          {
+            id: "3",
+            prompt: "How to set up automated workflows in project management software?",
+            visibility: 92,
+            intent: "Transactional",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "3",
+    pillarTopic: "AI Memory & Companions",
+    description: "Building AI applications with persistent memory and conversation capabilities",
+    promptCount: 3,
+    avgVisibility: 69,
+    contentContribution: 35,
+    subtopics: [
+      {
+        id: "3-1",
+        name: "Development Tools",
+        promptCount: 1,
+        visibility: 83,
+        prompts: [
+          {
+            id: "6",
+            prompt: "Tools for building AI companions that remember past interactions",
+            visibility: 83,
+            intent: "Informational",
+          },
+        ],
+      },
+      {
+        id: "3-2",
+        name: "Architecture Patterns",
+        promptCount: 1,
+        visibility: 67,
+        prompts: [
+          {
+            id: "7",
+            prompt: "What architecture should I use for persistent memory in conversational AI?",
+            visibility: 67,
+            intent: "Comparative",
+          },
+        ],
+      },
+      {
+        id: "3-3",
+        name: "Solution Guides",
+        promptCount: 1,
+        visibility: 58,
+        prompts: [
+          {
+            id: "8",
+            prompt: "Best solutions for adding long-term memory to AI applications 2025",
+            visibility: 58,
+            intent: "Transactional",
+          },
+        ],
+      },
+    ],
+  },
+]

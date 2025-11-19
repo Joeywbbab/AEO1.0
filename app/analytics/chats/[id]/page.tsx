@@ -148,31 +148,45 @@ export default function ChatDetailPage() {
                   </span>
                 </div>
                 <div className="space-y-3">
-                  {chat.competitorMentions.map((competitor, idx) => (
-                    <div key={idx} className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          {competitor.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-foreground truncate">{competitor.name}</div>
-                        <div className="text-xs text-muted-foreground truncate">{competitor.domain}</div>
-                      </div>
-                      <div className="text-right space-y-0.5">
-                        <div className="text-sm font-semibold text-foreground">{competitor.mentions}x</div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-8 h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary rounded-full"
-                              style={{ width: `${competitor.score}%` }}
-                            />
+                  {chat.competitorMentions.map((competitor, idx) => {
+                    // Check if competitor domain appears in any citation
+                    const isInCitation = chat.sources.some(source =>
+                      source.url.includes(competitor.domain)
+                    )
+
+                    return (
+                      <div key={idx} className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {competitor.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-foreground truncate">{competitor.name}</span>
+                            {isInCitation && (
+                              <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
+                                Cited
+                              </span>
+                            )}
                           </div>
-                          <span className="text-xs text-muted-foreground">{competitor.score}</span>
+                          <div className="text-xs text-muted-foreground truncate">{competitor.domain}</div>
+                        </div>
+                        <div className="text-right space-y-0.5">
+                          <div className="text-sm font-semibold text-foreground">{competitor.mentions}x</div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-8 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary rounded-full"
+                                style={{ width: `${competitor.score}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground">{competitor.score}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 

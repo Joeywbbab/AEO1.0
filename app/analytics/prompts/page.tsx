@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { MoreVertical, Plus, Filter, BookOpen } from "lucide-react"
+import { MoreVertical, Plus, Filter, BookOpen, Network } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,8 +21,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { Checkbox } from "@/components/ui/checkbox"
-import { mockPrompts } from "@/lib/mock-data"
+import { mockPrompts, mockTopicClusters } from "@/lib/mock-data"
 
 type TabType = "Active" | "Suggested" | "Inactive"
 
@@ -53,18 +59,20 @@ export default function PromptsPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = React.useState<TabType>("Active")
   const [selectedPrompts, setSelectedPrompts] = React.useState<Set<string>>(new Set())
-  const [isSelectionMode, setIsSelectionMode] = React.useState(false)
   const [isTagDialogOpen, setIsTagDialogOpen] = React.useState(false)
   const [selectedPromptForTags, setSelectedPromptForTags] = React.useState<string | null>(null)
   const [prompts, setPrompts] = React.useState(mockPrompts)
+  const [isClusterSheetOpen, setIsClusterSheetOpen] = React.useState(false)
+  const [selectedClusterId, setSelectedClusterId] = React.useState<string | null>(null)
+  const [selectedSubtopicId, setSelectedSubtopicId] = React.useState<string | null>(null)
 
   const [selectedFilterTags, setSelectedFilterTags] = React.useState<string[]>([])
   const [selectedIntent, setSelectedIntent] = React.useState<string | null>(null)
   const [selectedMentions, setSelectedMentions] = React.useState<string | null>(null)
 
-  const getTagColor = (tagName: string) => {
-    return availableTags.find((tag) => tag.name === tagName)?.color || "#6B7280"
-  }
+  const selectedCluster = selectedClusterId
+    ? mockTopicClusters.find(c => c.id === selectedClusterId)
+    : null
 
   const handleToggleTag = (promptId: string, tagName: string) => {
     setPrompts(
@@ -111,13 +119,6 @@ export default function PromptsPage() {
 
   const totalPrompts = prompts.filter((p) => p.status === activeTab).length
   const displayedPrompts = filteredPrompts.length
-
-  const handleToggleSelectionMode = () => {
-    setIsSelectionMode(!isSelectionMode)
-    if (isSelectionMode) {
-      setSelectedPrompts(new Set())
-    }
-  }
 
   const handleTogglePrompt = (promptId: string) => {
     const newSelected = new Set(selectedPrompts)
@@ -187,12 +188,23 @@ export default function PromptsPage() {
               · {displayedPrompts} / {totalPrompts} Prompts
             </span>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <a href="/guidelines" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              Guidelines
-            </a>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsClusterSheetOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Network className="h-4 w-4" />
+              Topic Clusters
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <a href="/guidelines" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Guidelines
+              </a>
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center justify-between gap-4">
@@ -310,12 +322,9 @@ export default function PromptsPage() {
               </Button>
             )}
 
-            <Button variant="outline" size="sm" className="h-10 bg-transparent" onClick={handleToggleSelectionMode}>
-              Select
-            </Button>
-
             <Button size="sm" className="h-10">
               <Plus className="h-4 w-4" />
+              Add Prompt
             </Button>
           </div>
         </div>
@@ -326,21 +335,15 @@ export default function PromptsPage() {
           <table className="w-full">
             <thead className="bg-muted/30 border-b border-border">
               <tr>
-                {isSelectionMode && (
-                  <th className="sticky left-0 bg-muted/30 px-6 py-4 w-12 z-10">
-                    <input
-                      type="checkbox"
-                      checked={selectedPrompts.size === filteredPrompts.length && filteredPrompts.length > 0}
-                      onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-border"
-                    />
-                  </th>
-                )}
-                <th
-                  className={`sticky bg-muted/30 text-left px-6 py-4 text-xs font-medium text-muted-foreground w-[30%] z-10 ${
-                    isSelectionMode ? "left-12" : "left-0"
-                  }`}
-                >
+                <th className="sticky left-0 bg-muted/30 px-6 py-4 w-12 z-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedPrompts.size === filteredPrompts.length && filteredPrompts.length > 0}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 rounded border-border"
+                  />
+                </th>
+                <th className="sticky left-12 bg-muted/30 text-left px-6 py-4 text-xs font-medium text-muted-foreground w-[30%] z-10">
                   Prompt
                 </th>
                 <th className="text-left px-6 py-4 text-xs font-medium text-muted-foreground">Intent</th>
@@ -357,7 +360,7 @@ export default function PromptsPage() {
             <tbody>
               {filteredPrompts.length === 0 ? (
                 <tr>
-                  <td colSpan={isSelectionMode ? 11 : 10} className="px-6 py-16 text-center">
+                  <td colSpan={11} className="px-6 py-16 text-center">
                     <p className="text-muted-foreground">No prompts found.</p>
                     <p className="text-sm text-muted-foreground mt-1">Try adjusting your search or tab selection.</p>
                   </td>
@@ -369,30 +372,18 @@ export default function PromptsPage() {
                     className={`hover:bg-muted/20 cursor-pointer transition-colors ${
                       index !== filteredPrompts.length - 1 ? "border-b border-border" : ""
                     }`}
-                    onClick={() => {
-                      if (isSelectionMode) {
-                        handleTogglePrompt(prompt.id)
-                      } else {
-                        router.push(`/analytics/prompts/${prompt.id}`)
-                      }
-                    }}
+                    onClick={() => router.push(`/analytics/prompts/${prompt.id}`)}
                   >
-                    {isSelectionMode && (
-                      <td className="sticky left-0 bg-card hover:bg-muted/20 px-6 py-4 z-10 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={selectedPrompts.has(prompt.id)}
-                          onChange={() => handleTogglePrompt(prompt.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-4 h-4 rounded border-border"
-                        />
-                      </td>
-                    )}
-                    <td
-                      className={`sticky bg-card hover:bg-muted/20 px-6 py-4 z-10 border-r border-border transition-colors ${
-                        isSelectionMode ? "left-12" : "left-0"
-                      }`}
-                    >
+                    <td className="sticky left-0 bg-card hover:bg-muted/20 px-6 py-4 z-10 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={selectedPrompts.has(prompt.id)}
+                        onChange={() => handleTogglePrompt(prompt.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 rounded border-border"
+                      />
+                    </td>
+                    <td className="sticky left-12 bg-card hover:bg-muted/20 px-6 py-4 z-10 border-r border-border transition-colors">
                       <span className="text-sm text-foreground leading-relaxed">{prompt.prompt}</span>
                     </td>
 
@@ -545,6 +536,240 @@ export default function PromptsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Topic Clusters Sheet */}
+      <Sheet open={isClusterSheetOpen} onOpenChange={setIsClusterSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-5xl overflow-auto">
+          <SheetHeader className="mb-6">
+            <SheetTitle className="text-xl font-semibold">Topic Clusters</SheetTitle>
+          </SheetHeader>
+
+          <div className="flex h-[calc(100vh-120px)]">
+            {/* Left: Multi-layer Radial Graph */}
+            <div className="w-3/5 border-r border-border pr-4 flex items-center justify-center">
+              <div className="relative w-[500px] h-[500px]">
+                {/* Center Node - Domain/Website */}
+                <div
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center text-center z-20 cursor-pointer hover:bg-primary/20 transition-colors"
+                  onClick={() => {
+                    setSelectedClusterId(null)
+                    setSelectedSubtopicId(null)
+                  }}
+                >
+                  <div>
+                    <div className="text-xs font-semibold text-foreground">Your Domain</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">asana.com</div>
+                  </div>
+                </div>
+
+                {/* Layer 1: Pillar Topics */}
+                {mockTopicClusters.map((cluster, index) => {
+                  const totalClusters = mockTopicClusters.length
+                  const angle = (index * 360) / totalClusters - 90
+                  const pillarRadius = 120
+                  const pillarX = Math.cos((angle * Math.PI) / 180) * pillarRadius
+                  const pillarY = Math.sin((angle * Math.PI) / 180) * pillarRadius
+
+                  return (
+                    <React.Fragment key={cluster.id}>
+                      {/* Connection from center to pillar */}
+                      <svg
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none"
+                        style={{ zIndex: 0 }}
+                      >
+                        <line
+                          x1="250"
+                          y1="250"
+                          x2={250 + pillarX}
+                          y2={250 + pillarY}
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          className="text-primary/30"
+                        />
+                      </svg>
+
+                      {/* Pillar Topic Node */}
+                      <div
+                        className={`absolute w-20 h-20 rounded-full flex items-center justify-center text-center cursor-pointer transition-all hover:scale-105 ${
+                          selectedClusterId === cluster.id
+                            ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2"
+                            : "bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50"
+                        }`}
+                        style={{
+                          top: `calc(50% + ${pillarY}px - 40px)`,
+                          left: `calc(50% + ${pillarX}px - 40px)`,
+                          zIndex: 10,
+                        }}
+                        onClick={() => {
+                          setSelectedClusterId(cluster.id)
+                          setSelectedSubtopicId(null)
+                        }}
+                      >
+                        <div className="px-1">
+                          <div className={`text-[10px] font-medium line-clamp-2 ${selectedClusterId === cluster.id ? "text-primary-foreground" : "text-foreground"}`}>
+                            {cluster.pillarTopic}
+                          </div>
+                          <div className={`text-[9px] mt-0.5 ${selectedClusterId === cluster.id ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                            {cluster.contentContribution}%
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Layer 2: Subtopics */}
+                      {cluster.subtopics.map((subtopic, subIndex) => {
+                        const subtopicCount = cluster.subtopics.length
+                        const spreadAngle = 40
+                        const subtopicAngle = angle - spreadAngle/2 + (subIndex * spreadAngle) / Math.max(subtopicCount - 1, 1)
+                        const subtopicRadius = 200
+                        const subtopicX = Math.cos((subtopicAngle * Math.PI) / 180) * subtopicRadius
+                        const subtopicY = Math.sin((subtopicAngle * Math.PI) / 180) * subtopicRadius
+
+                        return (
+                          <React.Fragment key={subtopic.id}>
+                            {/* Connection from pillar to subtopic */}
+                            <svg
+                              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none"
+                              style={{ zIndex: 0 }}
+                            >
+                              <line
+                                x1={250 + pillarX}
+                                y1={250 + pillarY}
+                                x2={250 + subtopicX}
+                                y2={250 + subtopicY}
+                                stroke="currentColor"
+                                strokeWidth="1"
+                                className={selectedClusterId === cluster.id ? "text-primary/50" : "text-border"}
+                              />
+                            </svg>
+
+                            {/* Subtopic Node */}
+                            <div
+                              className={`absolute w-16 h-16 rounded-lg flex items-center justify-center text-center cursor-pointer transition-all hover:scale-105 ${
+                                selectedSubtopicId === subtopic.id
+                                  ? "bg-primary/80 text-primary-foreground ring-2 ring-primary"
+                                  : selectedClusterId === cluster.id
+                                  ? "bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50"
+                                  : "bg-muted hover:bg-muted/80"
+                              }`}
+                              style={{
+                                top: `calc(50% + ${subtopicY}px - 32px)`,
+                                left: `calc(50% + ${subtopicX}px - 32px)`,
+                                zIndex: 5,
+                              }}
+                              onClick={() => {
+                                setSelectedClusterId(cluster.id)
+                                setSelectedSubtopicId(subtopic.id)
+                              }}
+                            >
+                              <div className="px-1">
+                                <div className={`text-[9px] font-medium line-clamp-2 ${selectedSubtopicId === subtopic.id ? "text-primary-foreground" : "text-foreground"}`}>
+                                  {subtopic.name}
+                                </div>
+                                <div className={`text-[8px] mt-0.5 ${selectedSubtopicId === subtopic.id ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                                  {subtopic.promptCount}
+                                </div>
+                              </div>
+                            </div>
+                          </React.Fragment>
+                        )
+                      })}
+                    </React.Fragment>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Right: Cluster Details */}
+            <div className="w-2/5 pl-6 overflow-auto">
+              {selectedCluster ? (
+                <div className="space-y-6">
+                  {/* Pillar Topic Info */}
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-1">{selectedCluster.pillarTopic}</h3>
+                    <p className="text-sm text-muted-foreground">{selectedCluster.description}</p>
+                    <div className="flex flex-wrap items-center gap-3 text-xs mt-3">
+                      <span className="px-2 py-1 bg-muted rounded text-muted-foreground">
+                        {selectedCluster.promptCount} prompts
+                      </span>
+                      <span className="px-2 py-1 bg-primary/10 rounded text-primary font-medium">
+                        {selectedCluster.avgVisibility}% visibility
+                      </span>
+                      <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 rounded text-amber-700 dark:text-amber-300 font-medium">
+                        {selectedCluster.contentContribution}% contribution
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Subtopics */}
+                  <div>
+                    <h4 className="text-sm font-medium text-foreground mb-3">Subtopics</h4>
+                    <div className="space-y-2">
+                      {selectedCluster.subtopics.map((subtopic) => (
+                        <div
+                          key={subtopic.id}
+                          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                            selectedSubtopicId === subtopic.id
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:bg-muted/50"
+                          }`}
+                          onClick={() => setSelectedSubtopicId(subtopic.id)}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-foreground">{subtopic.name}</span>
+                            <span className="text-xs text-primary font-medium">{subtopic.visibility}%</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{subtopic.promptCount} prompts</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Generated Prompts */}
+                  {selectedSubtopicId && (
+                    <div>
+                      <h4 className="text-sm font-medium text-foreground mb-3">Generated Prompts</h4>
+                      <div className="space-y-2">
+                        {selectedCluster.subtopics
+                          .find(s => s.id === selectedSubtopicId)
+                          ?.prompts.map((prompt) => (
+                            <div
+                              key={prompt.id}
+                              className="p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
+                              onClick={() => {
+                                setIsClusterSheetOpen(false)
+                                router.push(`/analytics/prompts/${prompt.id}`)
+                              }}
+                            >
+                              <p className="text-sm text-foreground mb-2 line-clamp-2">{prompt.prompt}</p>
+                              <div className="flex items-center gap-3 text-xs">
+                                <span className="text-muted-foreground">{prompt.intent}</span>
+                                <span className="text-primary font-medium">{prompt.visibility}%</span>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!selectedSubtopicId && (
+                    <div className="text-sm text-muted-foreground text-center py-4">
+                      Select a subtopic to view generated prompts
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <div className="text-muted-foreground text-sm mb-2">Click a pillar topic to view details</div>
+                  <div className="text-xs text-muted-foreground">
+                    Topic clusters show how your content strategy is organized<br />
+                    and how prompts are generated from each topic area.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
