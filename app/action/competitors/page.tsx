@@ -16,7 +16,20 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Settings, Trash2, Plus, TrendingUp, TrendingDown, ExternalLink, ChevronDown, ChevronRight } from "lucide-react"
+import { Settings, Trash2, Plus, TrendingUp, TrendingDown, ExternalLink, ChevronDown, ChevronRight, Check, ChevronsUpDown } from "lucide-react"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -312,6 +325,26 @@ export default function CompetitorsPage() {
   const [selectedIntent, setSelectedIntent] = React.useState<string>("all")
   const [expandedCompetitors, setExpandedCompetitors] = React.useState<Set<string>>(new Set())
   const [isAddingCompetitor, setIsAddingCompetitor] = React.useState(false)
+  const [openCombobox, setOpenCombobox] = React.useState(false)
+
+  // Predefined list of common competitors
+  const predefinedCompetitors = [
+    { name: "Monday.com", domain: "monday.com" },
+    { name: "Trello", domain: "trello.com" },
+    { name: "ClickUp", domain: "clickup.com" },
+    { name: "Notion", domain: "notion.so" },
+    { name: "Jira", domain: "atlassian.com/software/jira" },
+    { name: "Basecamp", domain: "basecamp.com" },
+    { name: "Wrike", domain: "wrike.com" },
+    { name: "Smartsheet", domain: "smartsheet.com" },
+    { name: "TeamWork", domain: "teamwork.com" },
+    { name: "Airtable", domain: "airtable.com" },
+    { name: "Linear", domain: "linear.app" },
+    { name: "Todoist", domain: "todoist.com" },
+    { name: "Microsoft Project", domain: "microsoft.com/project" },
+    { name: "Slack", domain: "slack.com" },
+    { name: "Microsoft Teams", domain: "teams.microsoft.com" },
+  ]
 
   const handleDialogOpenChange = (open: boolean) => {
     setIsDialogOpen(open)
@@ -319,7 +352,17 @@ export default function CompetitorsPage() {
       setIsAddingCompetitor(false)
       setNewCompetitorName("")
       setNewCompetitorDomain("")
+      setOpenCombobox(false)
     }
+  }
+
+  const handleCompetitorSelect = (competitorName: string) => {
+    setNewCompetitorName(competitorName)
+    const selectedComp = predefinedCompetitors.find(c => c.name === competitorName)
+    if (selectedComp) {
+      setNewCompetitorDomain(selectedComp.domain)
+    }
+    setOpenCombobox(false)
   }
 
   const handleAddCompetitor = () => {
@@ -483,12 +526,65 @@ export default function CompetitorsPage() {
                       <div className="space-y-3">
                         <div className="space-y-2">
                           <Label htmlFor="competitor-name">Competitor Name</Label>
-                          <Input
-                            id="competitor-name"
-                            placeholder="e.g., Jira"
-                            value={newCompetitorName}
-                            onChange={(e) => setNewCompetitorName(e.target.value)}
-                          />
+                          <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={openCombobox}
+                                className="w-full justify-between font-normal"
+                              >
+                                {newCompetitorName || "Select or type a competitor..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0" align="start">
+                              <Command>
+                                <CommandInput 
+                                  placeholder="Search competitors..." 
+                                  value={newCompetitorName}
+                                  onValueChange={(value) => {
+                                    setNewCompetitorName(value)
+                                    // Clear domain when typing custom name
+                                    if (!predefinedCompetitors.find(c => c.name.toLowerCase().includes(value.toLowerCase()))) {
+                                      setNewCompetitorDomain("")
+                                    }
+                                  }}
+                                />
+                                <CommandList>
+                                  <CommandEmpty>
+                                    <div className="py-2 px-4 text-sm">
+                                      No competitor found. Type to add "{newCompetitorName}" as a custom competitor.
+                                    </div>
+                                  </CommandEmpty>
+                                  <CommandGroup>
+                                    {predefinedCompetitors
+                                      .filter(comp => 
+                                        comp.name.toLowerCase().includes(newCompetitorName.toLowerCase()) ||
+                                        newCompetitorName === ""
+                                      )
+                                      .map((comp) => (
+                                        <CommandItem
+                                          key={comp.name}
+                                          value={comp.name}
+                                          onSelect={() => handleCompetitorSelect(comp.name)}
+                                        >
+                                          <Check
+                                            className={`mr-2 h-4 w-4 ${
+                                              newCompetitorName === comp.name ? "opacity-100" : "opacity-0"
+                                            }`}
+                                          />
+                                          <div className="flex-1">
+                                            <div className="font-medium">{comp.name}</div>
+                                            <div className="text-xs text-muted-foreground">{comp.domain}</div>
+                                          </div>
+                                        </CommandItem>
+                                      ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="competitor-domain">Domain</Label>

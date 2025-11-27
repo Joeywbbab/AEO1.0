@@ -185,6 +185,12 @@ export type TopicCluster = {
   promptCount: number
   avgVisibility: number
   contentContribution: number // Percentage contribution to overall content strategy
+  supportedContent: {
+    id: string
+    title: string
+    url: string
+    type: "Blog" | "Guide" | "Case Study" | "Documentation" | "Landing Page"
+  }[]
   subtopics: {
     id: string
     name: string
@@ -1485,6 +1491,11 @@ export const mockTopicClusters: TopicCluster[] = [
     promptCount: 4,
     avgVisibility: 75,
     contentContribution: 45,
+    supportedContent: [
+      { id: "c1-1", title: "Ultimate Guide to Project Management Tools", url: "/blog/project-management-guide", type: "Guide" },
+      { id: "c1-2", title: "Asana vs Monday.com Comparison", url: "/compare/asana-vs-monday", type: "Blog" },
+      { id: "c1-3", title: "Remote Team Case Study: How Acme Scaled", url: "/case-studies/acme-remote", type: "Case Study" },
+    ],
     subtopics: [
       {
         id: "1-1",
@@ -1543,6 +1554,10 @@ export const mockTopicClusters: TopicCluster[] = [
     promptCount: 1,
     avgVisibility: 92,
     contentContribution: 20,
+    supportedContent: [
+      { id: "c2-1", title: "Automation 101: Getting Started", url: "/docs/automation-guide", type: "Documentation" },
+      { id: "c2-2", title: "10 Workflow Templates That Save Time", url: "/blog/workflow-templates", type: "Blog" },
+    ],
     subtopics: [
       {
         id: "2-1",
@@ -1567,6 +1582,11 @@ export const mockTopicClusters: TopicCluster[] = [
     promptCount: 3,
     avgVisibility: 69,
     contentContribution: 35,
+    supportedContent: [
+      { id: "c3-1", title: "Building AI with Long-term Memory", url: "/blog/ai-memory-systems", type: "Blog" },
+      { id: "c3-2", title: "AI Companion Architecture Guide", url: "/docs/companion-architecture", type: "Documentation" },
+      { id: "c3-3", title: "Enterprise AI Memory Solutions", url: "/solutions/enterprise-ai", type: "Landing Page" },
+    ],
     subtopics: [
       {
         id: "3-1",

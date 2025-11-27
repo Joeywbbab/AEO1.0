@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { MoreVertical, Plus, Filter, BookOpen, Network } from "lucide-react"
+import { MoreVertical, Plus, ChevronDown, Lightbulb, Check, ExternalLink, FileText } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -30,7 +30,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { mockPrompts, mockTopicClusters } from "@/lib/mock-data"
 
-type TabType = "Active" | "Suggested" | "Inactive"
+type TabType = "Active" | "Inactive"
 
 type Tag = {
   id: string
@@ -63,16 +63,30 @@ export default function PromptsPage() {
   const [selectedPromptForTags, setSelectedPromptForTags] = React.useState<string | null>(null)
   const [prompts, setPrompts] = React.useState(mockPrompts)
   const [isClusterSheetOpen, setIsClusterSheetOpen] = React.useState(false)
+  const [adoptedPromptIds, setAdoptedPromptIds] = React.useState<Set<string>>(new Set())
   const [selectedClusterId, setSelectedClusterId] = React.useState<string | null>(null)
-  const [selectedSubtopicId, setSelectedSubtopicId] = React.useState<string | null>(null)
-
-  const [selectedFilterTags, setSelectedFilterTags] = React.useState<string[]>([])
-  const [selectedIntent, setSelectedIntent] = React.useState<string | null>(null)
-  const [selectedMentions, setSelectedMentions] = React.useState<string | null>(null)
 
   const selectedCluster = selectedClusterId
     ? mockTopicClusters.find(c => c.id === selectedClusterId)
     : null
+
+  // Calculate total suggested prompts count
+  const totalSuggestedPrompts = mockTopicClusters.reduce(
+    (total, cluster) => total + cluster.subtopics.reduce(
+      (subTotal, subtopic) => subTotal + subtopic.prompts.length, 0
+    ), 0
+  )
+
+  // Get unadopted prompts count for selected cluster
+  const clusterUnadoptedCount = selectedCluster
+    ? selectedCluster.subtopics.reduce(
+        (total, subtopic) => total + subtopic.prompts.filter(p => !adoptedPromptIds.has(p.id)).length, 0
+      )
+    : 0
+
+  const [selectedFilterTags, setSelectedFilterTags] = React.useState<string[]>([])
+  const [selectedIntent, setSelectedIntent] = React.useState<string | null>(null)
+  const [selectedMentions, setSelectedMentions] = React.useState<string | null>(null)
 
   const handleToggleTag = (promptId: string, tagName: string) => {
     setPrompts(
@@ -117,7 +131,6 @@ export default function PromptsPage() {
     return matchesTab && matchesTags && matchesIntent && matchesMentions
   })
 
-  const totalPrompts = prompts.filter((p) => p.status === activeTab).length
   const displayedPrompts = filteredPrompts.length
 
   const handleTogglePrompt = (promptId: string) => {
@@ -178,45 +191,150 @@ export default function PromptsPage() {
     setPrompts(prompts.filter((prompt) => prompt.id !== promptId))
   }
 
+  const handleAdoptPrompt = (promptId: string, promptText: string, intent: string) => {
+    if (adoptedPromptIds.has(promptId)) return
+
+    // Add to adopted set
+    setAdoptedPromptIds(prev => new Set([...prev, promptId]))
+
+    // Add to prompts list as Active
+    const newPrompt = {
+      id: `adopted-${promptId}-${Date.now()}`,
+      prompt: promptText,
+      intent: intent,
+      type: intent as "Informational" | "Comparative" | "Transactional",
+      status: "Active" as const,
+      stage: "Awareness" as const,
+      tags: [],
+      visibilityScore: 0,
+      sentiment: "Neutral" as const,
+      sentimentScore: 0,
+      position: "-",
+      positionRank: prompts.length + 1,
+      mentionsMe: 0,
+      mentionsCompetitors: 0,
+      brandMentions: [],
+      modelsCovered: [],
+      lastUpdated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      created: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      volume: [0, 0, 0, 0, 0, 0, 0],
+      country: "US",
+    }
+    setPrompts(prev => [...prev, newPrompt])
+  }
+
+  const handleAdoptAllInCluster = () => {
+    if (!selectedCluster) return
+
+    const newAdoptedIds = new Set(adoptedPromptIds)
+    const newPrompts: typeof prompts = []
+
+    selectedCluster.subtopics.forEach(subtopic => {
+      subtopic.prompts.forEach(prompt => {
+        if (!adoptedPromptIds.has(prompt.id)) {
+          newAdoptedIds.add(prompt.id)
+          newPrompts.push({
+            id: `adopted-${prompt.id}-${Date.now()}-${Math.random()}`,
+            prompt: prompt.prompt,
+            intent: prompt.intent,
+            type: prompt.intent as "Informational" | "Comparative" | "Transactional",
+            status: "Active" as const,
+            stage: "Awareness" as const,
+            tags: [],
+            visibilityScore: 0,
+            sentiment: "Neutral" as const,
+            sentimentScore: 0,
+            position: "-",
+            positionRank: prompts.length + newPrompts.length + 1,
+            mentionsMe: 0,
+            mentionsCompetitors: 0,
+            brandMentions: [],
+            modelsCovered: [],
+            lastUpdated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            created: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            volume: [0, 0, 0, 0, 0, 0, 0],
+            country: "US",
+          })
+        }
+      })
+    })
+
+    setAdoptedPromptIds(newAdoptedIds)
+    setPrompts(prev => [...prev, ...newPrompts])
+  }
+
   return (
     <div className="flex h-full flex-col bg-background">
       <div className="border-b border-border px-8 py-5">
+        {/* Title row */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-baseline gap-2">
             <h1 className="text-2xl font-semibold text-foreground">Prompts</h1>
             <span className="text-sm text-muted-foreground font-normal">
-              · {displayedPrompts} / {totalPrompts} Prompts
+              · {displayedPrompts} prompts
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsClusterSheetOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Network className="h-4 w-4" />
-              Topic Clusters
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <a href="/guidelines" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                Guidelines
-              </a>
-            </Button>
-          </div>
+          <Button variant="ghost" size="sm" asChild>
+            <a href="/guidelines" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+              Guidelines
+            </a>
+          </Button>
         </div>
 
+        {/* Actions row: Suggested + Add Prompt on right */}
+        <div className="flex items-center justify-end gap-3 mb-4">
+          {selectedPrompts.size > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-10 bg-transparent">
+                  Actions ({selectedPrompts.size})
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>Move to</DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => handleBulkMove("Active")}>Active</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkMove("Inactive")}>Inactive</DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuItem onClick={handleBulkDelete} className="text-destructive">
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsClusterSheetOpen(true)}
+            className="h-10 flex items-center gap-2"
+          >
+            <Lightbulb className="h-4 w-4" />
+            Suggested
+            <span className="ml-1 px-1.5 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full">
+              {totalSuggestedPrompts - adoptedPromptIds.size}
+            </span>
+          </Button>
+
+          <Button size="sm" className="h-10">
+            <Plus className="h-4 w-4" />
+            Add prompt
+          </Button>
+        </div>
+
+        {/* Tabs row: Active/Inactive on left, Filters on right */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            {(["Active", "Suggested", "Inactive"] as TabType[]).map((tab) => (
+            {(["Active", "Inactive"] as TabType[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-all ${
                   activeTab === tab
-                    ? "bg-background text-foreground border-2 border-primary shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border-2 border-transparent"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
               >
                 {tab}
@@ -224,108 +342,85 @@ export default function PromptsPage() {
             ))}
           </div>
 
+          {/* Filters */}
           <div className="flex items-center gap-3">
-            {selectedPrompts.size > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-10 bg-transparent">
-                    Actions ({selectedPrompts.size})
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40">
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>Move to</DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem onClick={() => handleBulkMove("Active")}>Active</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleBulkMove("Suggested")}>Suggested</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleBulkMove("Inactive")}>Inactive</DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                  <DropdownMenuItem onClick={handleBulkDelete} className="text-destructive">
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-10 bg-transparent gap-2">
-                  <Filter className="h-4 w-4" />
-                  Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {/* Tags Submenu */}
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    Tags {selectedFilterTags.length > 0 && `(${selectedFilterTags.length})`}
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-48">
-                    {availableTags.map((tag) => (
-                      <DropdownMenuItem
-                        key={tag.id}
-                        onClick={(e) => {
-                          e.preventDefault()
-                          setSelectedFilterTags((prev) =>
-                            prev.includes(tag.name) ? prev.filter((t) => t !== tag.name) : [...prev, tag.name],
-                          )
-                        }}
-                      >
-                        <div className="flex items-center gap-2 w-full">
-                          <input
-                            type="checkbox"
-                            checked={selectedFilterTags.includes(tag.name)}
-                            onChange={() => {}}
-                            className="w-4 h-4 rounded border-border"
-                          />
-                          <span>#{tag.name}</span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-
-                {/* Intent Submenu */}
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>Intent {selectedIntent && `(${selectedIntent})`}</DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-40">
-                    <DropdownMenuItem onClick={() => setSelectedIntent(null)}>All Intents</DropdownMenuItem>
-                    {availableIntents.map((intent) => (
-                      <DropdownMenuItem key={intent} onClick={() => setSelectedIntent(intent)}>
-                        {intent}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-
-                {/* Mentions Submenu */}
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    Mentions {selectedMentions && `(${selectedMentions})`}
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-40">
-                    <DropdownMenuItem onClick={() => setSelectedMentions(null)}>All</DropdownMenuItem>
-                    {availableMentions.map((mention) => (
-                      <DropdownMenuItem key={mention} onClick={() => setSelectedMentions(mention)}>
-                        {mention}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {activeFilterCount > 0 && (
-              <Button variant="ghost" size="sm" className="h-10" onClick={handleClearFilters}>
-                Clear
+          {/* Tags filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 bg-transparent gap-2">
+                {selectedFilterTags.length > 0 ? `${selectedFilterTags.length} tags` : "All tags"}
+                <ChevronDown className="h-4 w-4" />
               </Button>
-            )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuItem onClick={() => setSelectedFilterTags([])}>
+                All tags
+              </DropdownMenuItem>
+              {availableTags.map((tag) => (
+                <DropdownMenuItem
+                  key={tag.id}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setSelectedFilterTags((prev) =>
+                      prev.includes(tag.name) ? prev.filter((t) => t !== tag.name) : [...prev, tag.name],
+                    )
+                  }}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <input
+                      type="checkbox"
+                      checked={selectedFilterTags.includes(tag.name)}
+                      onChange={() => {}}
+                      className="w-4 h-4 rounded border-border"
+                    />
+                    <span>#{tag.name}</span>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            <Button size="sm" className="h-10">
-              <Plus className="h-4 w-4" />
-              Add Prompt
+          {/* Intent filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 bg-transparent gap-2">
+                {selectedIntent || "All intents"}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              <DropdownMenuItem onClick={() => setSelectedIntent(null)}>All intents</DropdownMenuItem>
+              {availableIntents.map((intent) => (
+                <DropdownMenuItem key={intent} onClick={() => setSelectedIntent(intent)}>
+                  {intent}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Mentions filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 bg-transparent gap-2">
+                {selectedMentions || "All mentions"}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              <DropdownMenuItem onClick={() => setSelectedMentions(null)}>All mentions</DropdownMenuItem>
+              {availableMentions.map((mention) => (
+                <DropdownMenuItem key={mention} onClick={() => setSelectedMentions(mention)}>
+                  {mention}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" size="sm" className="h-9 text-muted-foreground" onClick={handleClearFilters}>
+              Clear filters
             </Button>
+          )}
           </div>
         </div>
       </div>
@@ -479,9 +574,6 @@ export default function PromptsPage() {
                               <DropdownMenuItem onClick={(e) => handleSingleMove(prompt.id, "Active", e)}>
                                 Active
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => handleSingleMove(prompt.id, "Suggested", e)}>
-                                Suggested
-                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={(e) => handleSingleMove(prompt.id, "Inactive", e)}>
                                 Inactive
                               </DropdownMenuItem>
@@ -537,232 +629,205 @@ export default function PromptsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Topic Clusters Sheet */}
-      <Sheet open={isClusterSheetOpen} onOpenChange={setIsClusterSheetOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-5xl overflow-auto">
-          <SheetHeader className="mb-6">
-            <SheetTitle className="text-xl font-semibold">Topic Clusters</SheetTitle>
-          </SheetHeader>
+      {/* Suggested Prompts Sheet */}
+      <Sheet open={isClusterSheetOpen} onOpenChange={(open) => {
+        setIsClusterSheetOpen(open)
+        if (!open) setSelectedClusterId(null)
+      }}>
+        <SheetContent side="right" className="w-full sm:max-w-5xl overflow-auto p-0">
+          <div className="flex h-full">
+            {/* Left: Topic Clusters Graph */}
+            <div className="w-2/5 border-r border-border p-6 flex flex-col">
+              <SheetHeader className="mb-6">
+                <SheetTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-amber-500" />
+                  Topic Clusters
+                </SheetTitle>
+                <p className="text-sm text-muted-foreground">
+                  Select a cluster to view content and prompts
+                </p>
+              </SheetHeader>
 
-          <div className="flex h-[calc(100vh-120px)]">
-            {/* Left: Multi-layer Radial Graph */}
-            <div className="w-3/5 border-r border-border pr-4 flex items-center justify-center">
-              <div className="relative w-[500px] h-[500px]">
-                {/* Center Node - Domain/Website */}
-                <div
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center text-center z-20 cursor-pointer hover:bg-primary/20 transition-colors"
-                  onClick={() => {
-                    setSelectedClusterId(null)
-                    setSelectedSubtopicId(null)
-                  }}
-                >
-                  <div>
-                    <div className="text-xs font-semibold text-foreground">Your Domain</div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">asana.com</div>
+              {/* Radial Graph */}
+              <div className="flex-1 flex items-center justify-center">
+                <div className="relative w-[320px] h-[320px]">
+                  {/* Center Node */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center text-center z-20">
+                    <div>
+                      <div className="text-[10px] font-semibold text-foreground">Your Domain</div>
+                    </div>
                   </div>
-                </div>
 
-                {/* Layer 1: Pillar Topics */}
-                {mockTopicClusters.map((cluster, index) => {
-                  const totalClusters = mockTopicClusters.length
-                  const angle = (index * 360) / totalClusters - 90
-                  const pillarRadius = 120
-                  const pillarX = Math.cos((angle * Math.PI) / 180) * pillarRadius
-                  const pillarY = Math.sin((angle * Math.PI) / 180) * pillarRadius
+                  {/* Pillar Topics */}
+                  {mockTopicClusters.map((cluster, index) => {
+                    const totalClusters = mockTopicClusters.length
+                    const angle = (index * 360) / totalClusters - 90
+                    const radius = 110
+                    const x = Math.cos((angle * Math.PI) / 180) * radius
+                    const y = Math.sin((angle * Math.PI) / 180) * radius
 
-                  return (
-                    <React.Fragment key={cluster.id}>
-                      {/* Connection from center to pillar */}
-                      <svg
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none"
-                        style={{ zIndex: 0 }}
-                      >
-                        <line
-                          x1="250"
-                          y1="250"
-                          x2={250 + pillarX}
-                          y2={250 + pillarY}
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          className="text-primary/30"
-                        />
-                      </svg>
+                    return (
+                      <React.Fragment key={cluster.id}>
+                        {/* Connection line */}
+                        <svg className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+                          <line x1="160" y1="160" x2={160 + x} y2={160 + y} stroke="currentColor" strokeWidth="2" className={selectedClusterId === cluster.id ? "text-primary" : "text-primary/30"} />
+                        </svg>
 
-                      {/* Pillar Topic Node */}
-                      <div
-                        className={`absolute w-20 h-20 rounded-full flex items-center justify-center text-center cursor-pointer transition-all hover:scale-105 ${
-                          selectedClusterId === cluster.id
-                            ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2"
-                            : "bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50"
-                        }`}
-                        style={{
-                          top: `calc(50% + ${pillarY}px - 40px)`,
-                          left: `calc(50% + ${pillarX}px - 40px)`,
-                          zIndex: 10,
-                        }}
-                        onClick={() => {
-                          setSelectedClusterId(cluster.id)
-                          setSelectedSubtopicId(null)
-                        }}
-                      >
-                        <div className="px-1">
-                          <div className={`text-[10px] font-medium line-clamp-2 ${selectedClusterId === cluster.id ? "text-primary-foreground" : "text-foreground"}`}>
-                            {cluster.pillarTopic}
-                          </div>
-                          <div className={`text-[9px] mt-0.5 ${selectedClusterId === cluster.id ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                            {cluster.contentContribution}%
+                        {/* Cluster Node */}
+                        <div
+                          className={`absolute w-24 h-24 rounded-full flex items-center justify-center text-center cursor-pointer transition-all hover:scale-105 ${
+                            selectedClusterId === cluster.id
+                              ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2"
+                              : "bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50"
+                          }`}
+                          style={{
+                            top: `calc(50% + ${y}px - 48px)`,
+                            left: `calc(50% + ${x}px - 48px)`,
+                            zIndex: 10,
+                          }}
+                          onClick={() => setSelectedClusterId(cluster.id)}
+                        >
+                          <div className="px-2">
+                            <div className={`text-[10px] font-medium line-clamp-2 ${selectedClusterId === cluster.id ? "text-primary-foreground" : "text-foreground"}`}>
+                              {cluster.pillarTopic}
+                            </div>
+                            <div className={`text-[9px] mt-0.5 ${selectedClusterId === cluster.id ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                              {cluster.contentContribution}%
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </React.Fragment>
+                    )
+                  })}
+                </div>
+              </div>
 
-                      {/* Layer 2: Subtopics */}
-                      {cluster.subtopics.map((subtopic, subIndex) => {
-                        const subtopicCount = cluster.subtopics.length
-                        const spreadAngle = 40
-                        const subtopicAngle = angle - spreadAngle/2 + (subIndex * spreadAngle) / Math.max(subtopicCount - 1, 1)
-                        const subtopicRadius = 200
-                        const subtopicX = Math.cos((subtopicAngle * Math.PI) / 180) * subtopicRadius
-                        const subtopicY = Math.sin((subtopicAngle * Math.PI) / 180) * subtopicRadius
-
-                        return (
-                          <React.Fragment key={subtopic.id}>
-                            {/* Connection from pillar to subtopic */}
-                            <svg
-                              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none"
-                              style={{ zIndex: 0 }}
-                            >
-                              <line
-                                x1={250 + pillarX}
-                                y1={250 + pillarY}
-                                x2={250 + subtopicX}
-                                y2={250 + subtopicY}
-                                stroke="currentColor"
-                                strokeWidth="1"
-                                className={selectedClusterId === cluster.id ? "text-primary/50" : "text-border"}
-                              />
-                            </svg>
-
-                            {/* Subtopic Node */}
-                            <div
-                              className={`absolute w-16 h-16 rounded-lg flex items-center justify-center text-center cursor-pointer transition-all hover:scale-105 ${
-                                selectedSubtopicId === subtopic.id
-                                  ? "bg-primary/80 text-primary-foreground ring-2 ring-primary"
-                                  : selectedClusterId === cluster.id
-                                  ? "bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50"
-                                  : "bg-muted hover:bg-muted/80"
-                              }`}
-                              style={{
-                                top: `calc(50% + ${subtopicY}px - 32px)`,
-                                left: `calc(50% + ${subtopicX}px - 32px)`,
-                                zIndex: 5,
-                              }}
-                              onClick={() => {
-                                setSelectedClusterId(cluster.id)
-                                setSelectedSubtopicId(subtopic.id)
-                              }}
-                            >
-                              <div className="px-1">
-                                <div className={`text-[9px] font-medium line-clamp-2 ${selectedSubtopicId === subtopic.id ? "text-primary-foreground" : "text-foreground"}`}>
-                                  {subtopic.name}
-                                </div>
-                                <div className={`text-[8px] mt-0.5 ${selectedSubtopicId === subtopic.id ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                                  {subtopic.promptCount}
-                                </div>
-                              </div>
-                            </div>
-                          </React.Fragment>
-                        )
-                      })}
-                    </React.Fragment>
-                  )
-                })}
+              {/* Adopted count */}
+              <div className="pt-4 border-t border-border text-center">
+                <span className="text-sm text-muted-foreground">
+                  {adoptedPromptIds.size} prompts adopted
+                </span>
               </div>
             </div>
 
             {/* Right: Cluster Details */}
-            <div className="w-2/5 pl-6 overflow-auto">
+            <div className="w-3/5 p-6 overflow-auto">
               {selectedCluster ? (
                 <div className="space-y-6">
-                  {/* Pillar Topic Info */}
+                  {/* Cluster Header */}
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">{selectedCluster.pillarTopic}</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-1">{selectedCluster.pillarTopic}</h3>
                     <p className="text-sm text-muted-foreground">{selectedCluster.description}</p>
-                    <div className="flex flex-wrap items-center gap-3 text-xs mt-3">
-                      <span className="px-2 py-1 bg-muted rounded text-muted-foreground">
+                    <div className="flex items-center gap-3 mt-3">
+                      <span className="text-xs px-2 py-1 bg-muted rounded text-muted-foreground">
                         {selectedCluster.promptCount} prompts
                       </span>
-                      <span className="px-2 py-1 bg-primary/10 rounded text-primary font-medium">
-                        {selectedCluster.avgVisibility}% visibility
-                      </span>
-                      <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 rounded text-amber-700 dark:text-amber-300 font-medium">
-                        {selectedCluster.contentContribution}% contribution
+                      <span className="text-xs px-2 py-1 bg-primary/10 rounded text-primary font-medium">
+                        {selectedCluster.avgVisibility}% avg visibility
                       </span>
                     </div>
                   </div>
 
-                  {/* Subtopics */}
+                  {/* Supported Content */}
                   <div>
-                    <h4 className="text-sm font-medium text-foreground mb-3">Subtopics</h4>
+                    <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Supported Content
+                    </h4>
                     <div className="space-y-2">
-                      {selectedCluster.subtopics.map((subtopic) => (
-                        <div
-                          key={subtopic.id}
-                          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                            selectedSubtopicId === subtopic.id
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:bg-muted/50"
-                          }`}
-                          onClick={() => setSelectedSubtopicId(subtopic.id)}
+                      {selectedCluster.supportedContent.map((content) => (
+                        <a
+                          key={content.id}
+                          href={content.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
                         >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-foreground">{subtopic.name}</span>
-                            <span className="text-xs text-primary font-medium">{subtopic.visibility}%</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs px-2 py-0.5 bg-muted rounded text-muted-foreground">
+                              {content.type}
+                            </span>
+                            <span className="text-sm text-foreground">{content.title}</span>
                           </div>
-                          <span className="text-xs text-muted-foreground">{subtopic.promptCount} prompts</span>
-                        </div>
+                          <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                        </a>
                       ))}
                     </div>
                   </div>
 
-                  {/* Generated Prompts */}
-                  {selectedSubtopicId && (
-                    <div>
-                      <h4 className="text-sm font-medium text-foreground mb-3">Generated Prompts</h4>
-                      <div className="space-y-2">
-                        {selectedCluster.subtopics
-                          .find(s => s.id === selectedSubtopicId)
-                          ?.prompts.map((prompt) => (
+                  {/* Suggested Prompts */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                        <Lightbulb className="h-4 w-4" />
+                        Suggested Prompts
+                      </h4>
+                      {clusterUnadoptedCount > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleAdoptAllInCluster}
+                          className="text-xs h-7"
+                        >
+                          Adopt All ({clusterUnadoptedCount})
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {selectedCluster.subtopics.flatMap((subtopic) =>
+                        subtopic.prompts.map((prompt) => {
+                          const isAdopted = adoptedPromptIds.has(prompt.id)
+                          return (
                             <div
                               key={prompt.id}
-                              className="p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
-                              onClick={() => {
-                                setIsClusterSheetOpen(false)
-                                router.push(`/analytics/prompts/${prompt.id}`)
-                              }}
+                              className={`p-4 rounded-lg border transition-colors ${
+                                isAdopted
+                                  ? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30"
+                                  : "border-border hover:bg-muted/50"
+                              }`}
                             >
-                              <p className="text-sm text-foreground mb-2 line-clamp-2">{prompt.prompt}</p>
-                              <div className="flex items-center gap-3 text-xs">
-                                <span className="text-muted-foreground">{prompt.intent}</span>
-                                <span className="text-primary font-medium">{prompt.visibility}%</span>
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-foreground mb-2">{prompt.prompt}</p>
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <span className="px-2 py-0.5 bg-muted rounded text-muted-foreground">
+                                      {prompt.intent}
+                                    </span>
+                                    <span className="text-muted-foreground">
+                                      {subtopic.name}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant={isAdopted ? "ghost" : "default"}
+                                  className={`shrink-0 ${isAdopted ? "text-green-600 dark:text-green-400" : ""}`}
+                                  onClick={() => handleAdoptPrompt(prompt.id, prompt.prompt, prompt.intent)}
+                                  disabled={isAdopted}
+                                >
+                                  {isAdopted ? (
+                                    <>
+                                      <Check className="h-4 w-4 mr-1" />
+                                      Adopted
+                                    </>
+                                  ) : (
+                                    "Adopt"
+                                  )}
+                                </Button>
                               </div>
                             </div>
-                          ))}
-                      </div>
+                          )
+                        })
+                      )}
                     </div>
-                  )}
-
-                  {!selectedSubtopicId && (
-                    <div className="text-sm text-muted-foreground text-center py-4">
-                      Select a subtopic to view generated prompts
-                    </div>
-                  )}
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center">
-                  <div className="text-muted-foreground text-sm mb-2">Click a pillar topic to view details</div>
-                  <div className="text-xs text-muted-foreground">
-                    Topic clusters show how your content strategy is organized<br />
-                    and how prompts are generated from each topic area.
+                  <Lightbulb className="h-12 w-12 text-amber-500/50 mb-4" />
+                  <div className="text-foreground font-medium mb-2">Select a Topic Cluster</div>
+                  <div className="text-sm text-muted-foreground max-w-xs">
+                    Click on a topic cluster to view supported content and adopt suggested prompts for testing.
                   </div>
                 </div>
               )}
